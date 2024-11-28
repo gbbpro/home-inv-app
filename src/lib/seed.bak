@@ -1,0 +1,57 @@
+// src/lib/seed.js
+const fs = require('fs');
+const path = require('path');
+const db = require('./db');
+
+// Load and apply schema
+const schemaPath = path.join(__dirname, 'schema.sql');
+const schema = fs.readFileSync(schemaPath, 'utf-8');
+db.exec(schema);
+
+// Seed data for each category
+const suppliesData = [
+    { item: 'Multi-Surface Cleaner' }, { item: 'Dish Soap' }, { item: 'Laundry Detergent' },
+    { item: 'Glass Cleaner' }, { item: 'Bathroom Cleaner' }, { item: 'Bleach' },
+    { item: 'Floor Cleaner' }, { item: 'Disinfecting Wipes' }, { item: 'Scrubbing Sponges' },
+    { item: 'Broom' }, { item: 'Dustpan' }, { item: 'Mop' },
+    { item: 'Toilet Bowl Cleaner' }, { item: 'Duster' }, { item: 'Paper Towels' },
+    { item: 'Laundry Softener' }, { item: 'Stain Remover' }, { item: 'Trash Bags' },
+    { item: 'Carpet Cleaner' }, { item: 'Air Freshener' }, { item: 'Microfiber Cloths' },
+    { item: 'Dishwasher Detergent' }, { item: 'Vacuum Bags' }, { item: 'Odor Neutralizer' },
+    { item: 'Drain Cleaner' }, { item: 'Rubber Gloves' }, { item: 'Cleaning Brush' },
+    { item: 'Squeegee' }, { item: 'Dusting Spray' }, { item: 'Mold & Mildew Remover' }
+];
+
+const groceriesData = [
+    { item: 'Apple' }, { item: 'Banana' }, { item: 'Kiwi' }, { item: 'Cantaloupe' },
+    { item: 'Honeydew' }, { item: 'Strawberry' }, { item: 'Orange' }, { item: 'Grapefruit' },
+    { item: 'Pineapple' }, { item: 'Watermelon' }, { item: 'Peach' }, { item: 'Plum' },
+    { item: 'Nectarine' }, { item: 'Mango' }, { item: 'Papaya' }, { item: 'Blueberry' },
+    { item: 'Raspberry' }, { item: 'Blackberry' }, { item: 'Cranberry' }, { item: 'Cherry' },
+    { item: 'Pomegranate' }, { item: 'Lemon' }, { item: 'Lime' }, { item: 'Apricot' },
+    { item: 'Dragon Fruit' }, { item: 'Starfruit' }, { item: 'Guava' }, { item: 'Lychee' },
+    { item: 'Pear' }, { item: 'Grape' }
+];
+
+function seed() {
+    // Clear existing data to avoid duplicates on re-run
+    db.prepare('DELETE FROM supplies').run();
+    db.prepare('DELETE FROM groceries').run();
+
+    // Insert supplies data
+    suppliesData.forEach(({ item }) => {
+        db.prepare(`INSERT INTO supplies (item, item_variety, qty, date_purchased, cost, remind_after, reminder_flag)
+                    VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)`).run(item);
+    });
+
+    // Insert groceries data
+    groceriesData.forEach(({ item }) => {
+        db.prepare(`INSERT INTO groceries (item, item_variety, qty, date_purchased, cost, remind_after, reminder_flag)
+                    VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)`).run(item);
+    });
+
+    console.log("Database initialized and seeded successfully.");
+}
+
+// Run the seed function
+seed();
