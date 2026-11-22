@@ -7,30 +7,25 @@
     "dev": "next dev --port=8024",
     "build": "next build",
     "start": "next start --port=8024",
-    "lint": "next lint",
-    "init-db": "node src/lib/db.js",
-    "seed": "node src/lib/seed.js"
+    "reset-password": "node scripts/reset-password.mjs",
+    "db:import": "node scripts/import-sqlite.mjs"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "@libsql/client": "^0.15.15",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.5.0",
-    "cookies": "^0.9.1",
-    "csv-parser": "^3.0.0",
-    "js-cookie": "^3.0.5",
-    "jsonwebtoken": "^9.0.2",
-    "next": "15.0.3",
-    "papaparse": "^5.4.1",
-    "react": "19.0.0-rc-66855b96-20241106",
-    "react-dom": "19.0.0-rc-66855b96-20241106",
-    "react-icons": "^5.3.0",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "jose": "^6.2.18",
+    "next": "^15.5.29",
+    "papaparse": "^5.7.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-icons": "^5.7.0"
   },
   "devDependencies": {
-    "eslint": "^8",
-    "eslint-config-next": "15.0.3",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1"
+    "autoprefixer": "^10.7.0",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^3.4.19"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

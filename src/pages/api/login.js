@@ -1,38 +1,29 @@
-import { openDB } from "@/lib/db";
-import bcrypt from "bcryptjs"; // Use bcrypt to compare hashed passwords
-import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { get } from "@/lib/db";
+import { createToken, sessionCookie } from "@/lib/session";
 
 export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const { username, password } = req.body;
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  const username = String(req.body?.username || "").trim();
+  const password = String(req.body?.password || "");
+  if (!username || !password) {
+    return res.status(400).json({ error: "Enter your username and password." });
+  }
+  try {
+    const user = await get(
+      "SELECT username, password_hash FROM users WHERE lower(username) = lower(?)",
+      [username]
+    );
+    const ok = user && (await bcrypt.compare(password, user.password_hash || ""));
+    if (!ok) return res.status(401).json({ error: "That username and password don't match." });
 
-    if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
-    }
-
-    try {
-      const db = await openDB();
-      const user = await db.get("SELECT * FROM users WHERE username = ?", [username]);
-
-      if (!user) {
-        return res.status(400).json({ message: "Invalid username or password" });
-      }
-
-      // Compare the hashed password in the database with the provided password
-      const isMatch = await bcrypt.compare(password, user.password_hash);
-      if (!isMatch) {
-        return res.status(400).json({ message: "Invalid username or password" });
-      }
-
-      // Generate JWT token after successful login
-      const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: "1h" });
-      res.setHeader("Set-Cookie", `token=${token}; HttpOnly; Path=/; SameSite=Lax; Secure`);
-      res.status(200).json({ message: "Login successful" });
-    } catch (error) {
-      console.error("Database error:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  } else {
-    res.status(405).json({ message: "Method not allowed" });
+    res.setHeader("Set-Cookie", sessionCookie(await createToken(user.username)));
+    res.status(200).json({ username: user.username });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Couldn't log in right now. Please try again." });
   }
 }

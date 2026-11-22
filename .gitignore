@@ -1,5 +1,11 @@
-*.
-.next
 /node_modules
-.env.local
-package-lock.json
+/.next
+/out
+.env*
+!.env.example
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.DS_Store
+.vercel

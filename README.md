@@ -1,45 +1,47 @@
-<<<<<<< HEAD
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Home Inventory
 
-## Getting Started
+Track groceries and household supplies, build a shopping list, check things off in the store, and see what you've bought over time. Built with Next.js, Tailwind, and [Turso](https://turso.tech) (hosted SQLite).
 
-First, run the development server:
+## Run it locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local      # optional locally
+npm run reset-password -- bart 'a-new-password'   # creates the account if it doesn't exist
+npm run dev                     # http://localhost:8024
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+With no `TURSO_DATABASE_URL`, the app uses a local `home_inv.db` file (git-ignored).
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+## Deploy to Vercel
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+1. **Create a Turso database.** Use the Turso integration in the Vercel Marketplace, or sign up at turso.tech and run:
+   ```bash
+   turso db create home-inventory
+   turso db show home-inventory --url        # → TURSO_DATABASE_URL
+   turso db tokens create home-inventory     # → TURSO_AUTH_TOKEN
+   ```
+2. **Add environment variables** in Vercel → Project → Settings → Environment Variables:
+   - `TURSO_DATABASE_URL`
+   - `TURSO_AUTH_TOKEN`
+   - `JWT_SECRET`: a long random string, e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+3. **Copy your existing data** into Turso (run on your computer, with the Turso values in `.env.local`):
+   ```bash
+   npm run db:import -- ./home_inv.db
+   ```
+4. **Set a password** you'll remember:
+   ```bash
+   npm run reset-password -- bart 'a-new-password'
+   ```
+5. Redeploy.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## Forgotten passwords
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Someone in the household forgot theirs:** anyone logged in can go to **Settings → Household → New password** for them.
+- **Everyone is locked out:** run `npm run reset-password -- <username> <new-password>` with the Turso values in `.env.local`.
 
-## Learn More
+There's no public sign-up. Add people from **Settings → Household**.
 
-To learn more about Next.js, take a look at the following resources:
+## CSV import
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
-=======
-# home-inventory-app
-inventory app for grocery shopping
->>>>>>> f5c8c130d739f9534d418af373f1a0fdc2ead40c
+**Settings → Import items from CSV.** Columns: `item` (required), `item_variety`, `category`, `qty`, `pack_size`, `cost`, `date_purchased`, `remind_after`.

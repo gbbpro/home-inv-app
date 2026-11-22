@@ -1,242 +1,221 @@
-import ShoppingListLayout from "@/components/ShoppingLayout";
-import { useEffect, useState } from "react";
-import jwt from "jsonwebtoken";
-import Cookies from "cookies";
+import { useEffect, useMemo, useState } from "react";
+import Head from "next/head";
+import Link from "next/link";
+import { FiCheck, FiX, FiShoppingBag, FiBox, FiCheckSquare, FiLoader } from "react-icons/fi";
+import { PageHeader, EmptyState, ErrorState, ListSkeleton } from "@/components/States";
+import { useConfirm } from "@/components/Confirm";
+import { useToast } from "@/components/Toast";
+import { api, localToday, useApi } from "@/lib/client";
+import { TYPES } from "@/lib/items";
+import { amount, categoryLabel, relativeDay, titleCase } from "@/lib/format";
 
-export async function getServerSideProps(context) {
-  const cookies = new Cookies(context.req, context.res);
-  const token = cookies.get("token");
+const STORAGE_KEY = "shopping-list-checked";
+const NO_CHECKS = { groceries: [], supplies: [] };
 
-  // Redirect to login if token is missing or invalid
-  if (!token) {
-    return {
-      redirect: {
-        destination: "/login",
-        permanent: false,
-      },
-    };
-  }
-
-  // Verify the JWT token
+function loadChecked() {
   try {
-    jwt.verify(token, process.env.JWT_SECRET);
-    return { props: {} }; // If valid, render the blog page
-  } catch (error) {
-    return {
-      redirect: {
-        destination: "/login",
-        permanent: false,
-      },
-    };
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return saved && Array.isArray(saved.groceries) && Array.isArray(saved.supplies) ? saved : NO_CHECKS;
+  } catch {
+    return NO_CHECKS;
   }
 }
 
-const ShoppingList = () => {
-  const [groceries, setGroceries] = useState([]);
-  const [supplies, setSupplies] = useState([]);
-  const [purchasedItems, setPurchasedItems] = useState({
-    groceries: [],
-    supplies: [],
-  });
+export default function ShoppingList() {
+  const { data, error, loading, reload, setData } = useApi("/api/shopping-list");
+  const [checked, setChecked] = useState(NO_CHECKS);
+  const [busy, setBusy] = useState(false);
+  const [confirm, confirmDialog] = useConfirm();
+  const toast = useToast();
 
+  // Checked-off items survive a page refresh in the store.
+  useEffect(() => setChecked(loadChecked()), []);
   useEffect(() => {
-    fetchShoppingLists();
-  }, []);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+    } catch {}
+  }, [checked]);
 
-  const fetchShoppingLists = () => {
-    fetch("/api/groceries/shopping-list")
-      .then((res) => res.json())
-      .then((data) => setGroceries(data));
+  // Forget checks for items that are no longer on the list.
+  const live = useMemo(() => {
+    if (!data) return checked;
+    const keep = (key) => checked[key].filter((id) => data[key].some((i) => i.id === id));
+    return { groceries: keep("groceries"), supplies: keep("supplies") };
+  }, [data, checked]);
 
-    fetch("/api/supplies/shopping-list")
-      .then((res) => res.json())
-      .then((data) => setSupplies(data));
-  };
+  const total = data ? data.groceries.length + data.supplies.length : 0;
+  const checkedCount = live.groceries.length + live.supplies.length;
 
-  // Toggle strikethrough for purchased items
-  const togglePurchased = (id, type) => {
-    if (type === "grocery") {
-      setPurchasedItems((prev) => ({
-        ...prev,
-        groceries: prev.groceries.includes(id)
-          ? prev.groceries.filter((itemId) => itemId !== id)
-          : [...prev.groceries, id],
-      }));
-    } else {
-      setPurchasedItems((prev) => ({
-        ...prev,
-        supplies: prev.supplies.includes(id)
-          ? prev.supplies.filter((itemId) => itemId !== id)
-          : [...prev.supplies, id],
-      }));
+  const toggleCheck = (key, id) =>
+    setChecked((c) => ({
+      ...live,
+      [key]: live[key].includes(id) ? live[key].filter((x) => x !== id) : [...live[key], id],
+    }));
+
+  const removeFromList = async (key, item) => {
+    setData((d) => ({ ...d, [key]: d[key].filter((i) => i.id !== item.id) }));
+    try {
+      await api(`/api/items/${key}/${item.id}`, { method: "PUT", body: { shopping_list: 0 } });
+      toast(`${titleCase(item.item)} removed from your list`);
+    } catch (err) {
+      toast(err.message, { error: true });
+      reload();
     }
   };
 
-  // Move purchased items to completed purchases
-  const moveToCompleted = async () => {
-    const confirmed = window.confirm(
-      "Do you want to submit the Completed Grocery List?"
-    );
-    if (confirmed) {
-      const completedData = {
-        groceries: groceries.filter((item) =>
-          purchasedItems.groceries.includes(item.id)
-        ),
-        supplies: supplies.filter((item) =>
-          purchasedItems.supplies.includes(item.id)
-        ),
-      };
-
-      try {
-        const completedResponse = await fetch("/api/completed-purchases", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(completedData),
-        });
-        const completedResult = await completedResponse.json();
-        console.log("Completed purchases response:", completedResult);
-
-        const updateResponse = await fetch("/api/update-date-purchased", {
-          method: "POST",
-        });
-        const updateResult = await updateResponse.json();
-        console.log("Update date purchased response:", updateResult);
-      } catch (error) {
-        console.error("Error in moving items to completed purchases:", error);
-      }
+  const finishTrip = async () => {
+    const left = total - checkedCount;
+    const ok = await confirm({
+      title: "Finish this trip?",
+      message: `${checkedCount} item${checkedCount === 1 ? "" : "s"} will be saved to your history as bought today.${
+        left ? ` The ${left} unchecked item${left === 1 ? "" : "s"} will stay on your list.` : ""
+      }`,
+      action: "Finish trip",
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await api("/api/shopping-list/complete", { method: "POST", body: { ...live, date: localToday() } });
+      setChecked(NO_CHECKS);
+      toast("Trip saved to history");
+      await reload();
+    } catch (err) {
+      toast(err.message, { error: true });
+    } finally {
+      setBusy(false);
     }
-    clearShoppingList(); // Clear list after moving to completed
   };
 
-  // Clear all items from the shopping list
-  const clearShoppingList = async () => {
-    const confirmed = window.confirm("Do you want to clear the Shopping List");
-    if (confirmed) {
-      await fetch("/api/clear-shopping-list", {
-        method: "POST",
-      });
-      fetchShoppingLists();
-      setPurchasedItems({ groceries: [], supplies: [] }); // Reset purchased items
+  const clearList = async () => {
+    const ok = await confirm({
+      title: "Clear the whole list?",
+      message: "Every item comes off the list. Nothing is saved to history.",
+      action: "Clear list",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api("/api/shopping-list/clear", { method: "POST" });
+      setChecked(NO_CHECKS);
+      toast("List cleared");
+      reload();
+    } catch (err) {
+      toast(err.message, { error: true });
     }
   };
 
   return (
-    <ShoppingListLayout title="Shopping List">
-      {/* Control Buttons */}
-      <div className="flex justify-center space-x-4 mt-6">
-        <button
-          onClick={moveToCompleted}
-          className="bg-blue-800 text-sm text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Complete Shopping List
-        </button>
-        <button
-          onClick={clearShoppingList}
-          className="bg-red-800 text-sm text-white px-4 py-2 rounded hover:bg-red-600"
-        >
-          Clear Shopping List
-        </button>
-      </div>
+    <>
+      <Head>
+        <title>Shopping list · Home Inventory</title>
+      </Head>
+      <PageHeader
+        title="Shopping list"
+        subtitle={data ? (total ? `${total} item${total === 1 ? "" : "s"}${checkedCount ? ` · ${checkedCount} in the cart` : ""}` : "Nothing to buy") : " "}
+        actions={total > 0 && <button className="btn-ghost text-stone-500" onClick={clearList}>Clear list</button>}
+      />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-h-[90vh] overflow-y-auto">
-        <h1>Shopping List</h1>
+      {loading && !data ? (
+        <ListSkeleton rows={5} />
+      ) : error ? (
+        <ErrorState message={error} onRetry={reload} />
+      ) : total === 0 ? (
+        <EmptyState icon={FiCheckSquare} title="Your list is empty">
+          Tap <span className="font-medium text-stone-700">Add to list</span> on anything in{" "}
+          <Link href="/groceries" className="font-medium text-brand-700 hover:underline">Groceries</Link> or{" "}
+          <Link href="/supplies" className="font-medium text-brand-700 hover:underline">Supplies</Link>.
+        </EmptyState>
+      ) : (
+        <div className="space-y-8">
+          {Object.entries(TYPES).map(([key, meta]) =>
+            data[key].length === 0 ? null : (
+              <Section
+                key={key}
+                title={meta.label}
+                icon={key === "groceries" ? FiShoppingBag : FiBox}
+                items={data[key]}
+                checkedIds={live[key]}
+                onCheck={(id) => toggleCheck(key, id)}
+                onRemove={(item) => removeFromList(key, item)}
+              />
+            )
+          )}
+        </div>
+      )}
 
-        {/* Groceries Section */}
-        <h2 className="font-extrabold text-3xl max-w-md bg-gray-800 text-white">
-          Groceries
-        </h2>
-        {groceries.length === 0 ? (
-          <p>No groceries in the shopping list yet.</p>
-        ) : (
-          <ul>
-            {groceries.map((item) => (
-              <li
-                key={`grocery-${item.id}`}
-                className="flex justify-between items-center"
-              >
-                <div
-                  className={`flex-1 ${
-                    purchasedItems.groceries.includes(item.id)
-                      ? "line-through"
-                      : ""
-                  }`}
-                >
-                  <p className="text-lg font-extrabold text-gray-800">
-                    {item.category
-                      ? item.category.toUpperCase()
-                      : "Uncategorized"}{" "}
-                    &nbsp; &nbsp;
-                    {item.item.toUpperCase()} - {item.item_variety}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    Quantity: {item.qty} - {item.pack_size}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    Last Purchased {item.date_purchased}
-                  </p>
-                </div>
-                <button
-                  onClick={() => togglePurchased(item.id, "grocery")}
-                  className="bg-green-500 text-white px-2 py-1 rounded"
-                >
-                  {purchasedItems.groceries.includes(item.id)
-                    ? "Undo"
-                    : "Purchased"}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* Supplies Section */}
-        <h2 className="font-extrabold text-3xl max-w-md bg-gray-800 text-white">
-          Supplies
-        </h2>
-        {supplies.length === 0 ? (
-          <p>No supplies in the shopping list yet.</p>
-        ) : (
-          <ul>
-            {supplies.map((item) => (
-              <li
-                key={`supply-${item.id}`}
-                className="flex justify-between items-center"
-              >
-                <div
-                  className={`flex-1 ${
-                    purchasedItems.supplies.includes(item.id)
-                      ? "line-through"
-                      : ""
-                  }`}
-                >
-                  <p className="text-lg font-extrabold text-gray-800">
-                    {item.category
-                      ? item.category.toUpperCase()
-                      : "Uncategorized"}{" "}
-                    &nbsp; &nbsp;
-                    {item.item.toUpperCase()} - {item.item_variety}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    Quantity: {item.qty} - {item.pack_size}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    Last Purchased {item.date_purchased}
-                  </p>
-                </div>
-                <button
-                  onClick={() => togglePurchased(item.id, "supply")}
-                  className="bg-green-500 text-white px-2 py-1 rounded"
-                >
-                  {purchasedItems.supplies.includes(item.id)
-                    ? "Undo"
-                    : "Purchased"}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </ShoppingListLayout>
+      {checkedCount > 0 && (
+        <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 px-4 md:bottom-6">
+          <div className="mx-auto flex max-w-md animate-slide-up items-center gap-3 rounded-2xl bg-stone-900 p-2 pl-4 text-white shadow-lg">
+            <span className="text-sm">
+              <span className="font-semibold">{checkedCount}</span> of {total} in the cart
+            </span>
+            <button className="btn ml-auto bg-brand-500 text-white hover:bg-brand-600" onClick={finishTrip} disabled={busy}>
+              {busy ? <FiLoader className="animate-spin" /> : <FiCheck />}
+              Finish trip
+            </button>
+          </div>
+        </div>
+      )}
+      {confirmDialog}
+    </>
   );
-};
+}
 
-export default ShoppingList;
+function Section({ title, icon: Icon, items, checkedIds, onCheck, onRemove }) {
+  const done = items.filter((i) => checkedIds.includes(i.id)).length;
+  return (
+    <section>
+      <div className="mb-2 flex items-center gap-2 px-1">
+        <Icon className="text-stone-400" size={16} />
+        <h2 className="text-sm font-semibold text-stone-700">{title}</h2>
+        <span className="text-sm text-stone-400">{done}/{items.length}</span>
+      </div>
+      <ul className="card divide-y divide-stone-100 overflow-hidden">
+        {items.map((item, idx) => {
+          const isChecked = checkedIds.includes(item.id);
+          const showCategory = idx === 0 || items[idx - 1].category !== item.category;
+          const details = [amount(item), item.date_purchased && `last bought ${relativeDay(item.date_purchased)}`].filter(Boolean);
+          return (
+            <li key={item.id}>
+              {showCategory && (
+                <p className="bg-stone-50/80 px-4 pb-1.5 pt-2.5 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+                  {categoryLabel(item.category)}
+                </p>
+              )}
+              <div className="flex items-center">
+                <button
+                  onClick={() => onCheck(item.id)}
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  className="flex min-w-0 flex-1 items-center gap-3.5 px-4 py-3.5 text-left"
+                >
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                      isChecked ? "border-brand-600 bg-brand-600 text-white" : "border-stone-300 bg-white"
+                    }`}
+                  >
+                    {isChecked && <FiCheck size={16} strokeWidth={3} />}
+                  </span>
+                  <span className={`min-w-0 transition ${isChecked ? "opacity-50" : ""}`}>
+                    <span className={`block truncate font-medium text-stone-900 ${isChecked ? "line-through decoration-stone-400" : ""}`}>
+                      {titleCase(item.item)}
+                      {item.item_variety && <span className="font-normal text-stone-500"> · {titleCase(item.item_variety)}</span>}
+                    </span>
+                    {details.length > 0 && <span className="block truncate text-sm text-stone-500">{details.join(" · ")}</span>}
+                  </span>
+                </button>
+                <button
+                  onClick={() => onRemove(item)}
+                  className="mr-2 rounded-full p-2.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
+                  aria-label={`Take ${item.item} off the list`}
+                >
+                  <FiX size={18} />
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
