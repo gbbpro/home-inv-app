@@ -14,6 +14,7 @@ export const ITEM_FIELDS = [
   "date_purchased",
   "remind_after",
   "category",
+  "upc",
 ];
 
 const NUMBER_FIELDS = { qty: "int", remind_after: "int", cost: "float" };
@@ -35,6 +36,7 @@ export function cleanValue(field, value) {
   const str = String(value).trim();
   if (str === "") return null;
   if (field === "date_purchased") return normalizeDate(str);
+  if (field === "upc") return normalizeUpc(str);
   if (field === "category") return str.toLowerCase().replace(/\s+/g, "-");
   return str;
 }
@@ -59,4 +61,14 @@ export function normalizeDate(str) {
   }
   if (!m) return str;
   return `${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
+}
+
+// Barcodes are stored as digits only. A 13-digit EAN that starts with 0 is the
+// same product as the 12-digit UPC-A, so store the shorter form.
+export function normalizeUpc(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (digits.length < 6 || digits.length > 14) return null;
+  if (digits.length === 13 && digits.startsWith("0")) return digits.slice(1);
+  if (digits.length === 14 && digits.startsWith("00")) return digits.slice(2);
+  return digits;
 }

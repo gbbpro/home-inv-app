@@ -42,6 +42,15 @@ With no `TURSO_DATABASE_URL`, the app uses a local `home_inv.db` file (git-ignor
 
 There's no public sign-up. Add people from **Settings → Household**.
 
+## Barcode scanning
+
+Tap **Scan** on Groceries or Supplies and point your phone's camera at a barcode (needs HTTPS, which Vercel provides).
+
+- If the barcode belongs to something you already have, it opens that item so you can add it to the list or edit it.
+- If not, it looks the product up in Open Food Facts, Open Products Facts, Open Beauty Facts and UPCitemdb (free, no keys) and fills in the name, brand, size and a best-guess category.
+- Existing items don't have barcodes yet: when you scan one, choose **It's something already in …** and pick the item. From then on, scanning it finds that item.
+- You can also type the numbers under the barcode, or search your inventory by barcode.
+
 ## CSV import
 
-**Settings → Import items from CSV.** Columns: `item` (required), `item_variety`, `category`, `qty`, `pack_size`, `cost`, `date_purchased`, `remind_after`.
+**Settings → Import items from CSV.** Columns: `item` (required), `item_variety`, `category`, `qty`, `pack_size`, `cost`, `date_purchased`, `remind_after`, `upc`.

@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { FiPlus, FiSearch, FiShoppingCart, FiCheck, FiPackage, FiUpload, FiX } from "react-icons/fi";
 import ItemEditor from "./ItemEditor";
+import ScanSheet from "./ScanSheet";
+import { LuScanBarcode } from "react-icons/lu";
 import { useToast } from "./Toast";
 import { PageHeader, EmptyState, ErrorState, ListSkeleton } from "./States";
 import { api, useApi } from "@/lib/client";
@@ -27,6 +29,23 @@ export default function InventoryPage({ type }) {
   const { data: items, error, loading, reload, setData } = useApi(`/api/items/${type}`);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(undefined); // undefined = closed, null = new, object = edit
+  const [prefill, setPrefill] = useState(null);
+  const [scanning, setScanning] = useState(false);
+
+  // /groceries?edit=12 opens that item (used when a scan finds it on the other page).
+  useEffect(() => {
+    const id = Number(router.query.edit);
+    if (!id || !items) return;
+    const found = items.find((i) => i.id === id);
+    if (found) setEditing(found);
+    const { edit, ...rest } = router.query;
+    router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true, scroll: false });
+  }, [router.query.edit, items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openNew = (values = null) => {
+    setPrefill(values);
+    setEditing(null);
+  };
 
   const activeCategory = typeof router.query.category === "string" ? router.query.category : "";
   const setCategory = (c) =>
@@ -43,7 +62,7 @@ export default function InventoryPage({ type }) {
     return (items || []).filter((i) => {
       if (activeCategory && (i.category || "") !== (activeCategory === "uncategorized" ? "" : activeCategory)) return false;
       if (!q) return true;
-      return [i.item, i.item_variety, i.category].some((v) => v && String(v).toLowerCase().includes(q));
+      return [i.item, i.item_variety, i.category, i.upc].some((v) => v && String(v).toLowerCase().includes(q));
     });
   }, [items, search, activeCategory]);
 
@@ -84,7 +103,10 @@ export default function InventoryPage({ type }) {
             <Link href={`/import?type=${type}`} className="btn-secondary hidden sm:inline-flex">
               <FiUpload size={16} /> Import
             </Link>
-            <button className="btn-primary" onClick={() => setEditing(null)}>
+            <button className="btn-secondary" onClick={() => setScanning(true)} aria-label="Scan a barcode">
+              <LuScanBarcode size={18} /> <span className="hidden sm:inline">Scan</span>
+            </button>
+            <button className="btn-primary" onClick={() => openNew()}>
               <FiPlus size={18} /> <span className="hidden sm:inline">Add item</span><span className="sm:hidden">Add</span>
             </button>
           </>
@@ -132,7 +154,7 @@ export default function InventoryPage({ type }) {
         <ErrorState message={error} onRetry={reload} />
       ) : items.length === 0 ? (
         <EmptyState icon={FiPackage} title={`No ${meta.label.toLowerCase()} yet`}>
-          Add your first item, or{" "}
+          Add your first item, scan a barcode, or{" "}
           <Link className="font-medium text-brand-700 underline-offset-2 hover:underline" href={`/import?type=${type}`}>import a CSV</Link>.
         </EmptyState>
       ) : visible.length === 0 ? (
@@ -161,10 +183,29 @@ export default function InventoryPage({ type }) {
         onClose={() => setEditing(undefined)}
         type={type}
         item={editing || null}
+        prefill={editing === null ? prefill : null}
         categories={categories.map(([c]) => c)}
         defaultCategory={activeCategory && activeCategory !== "uncategorized" ? activeCategory : ""}
         onSaved={onSaved}
         onDeleted={(id) => setData((all) => all.filter((i) => i.id !== id))}
+      />
+
+      <ScanSheet
+        open={scanning}
+        onClose={() => setScanning(false)}
+        type={type}
+        items={items || []}
+        categories={categories.map(([c]) => c)}
+        onChanged={reload}
+        onAddNew={(values) => {
+          setScanning(false);
+          openNew(values);
+        }}
+        onEdit={(matchType, item) => {
+          setScanning(false);
+          if (matchType === type) setEditing(item);
+          else router.push(`/${matchType}?edit=${item.id}`);
+        }}
       />
     </>
   );

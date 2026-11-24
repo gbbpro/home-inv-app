@@ -18,12 +18,12 @@ export function ToastProvider({ children }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 md:bottom-8"
+        className="pointer-events-none fixed inset-x-0 top-[calc(0.75rem+env(safe-area-inset-top))] z-[60] flex justify-center px-4 md:top-20"
       >
         {toast && (
           <div
             key={toast.key}
-            className={`pointer-events-auto flex max-w-sm animate-slide-up items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${
+            className={`pointer-events-auto flex max-w-sm animate-drop-in items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${
               toast.error ? "bg-red-600 text-white" : "bg-stone-900 text-white"
             }`}
           >

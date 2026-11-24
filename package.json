@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "bcryptjs": "^2.4.3",
     "jose": "^6.2.18",
     "next": "^15.5.29",

@@ -25,10 +25,12 @@ export default {
       keyframes: {
         "fade-in": { from: { opacity: 0 }, to: { opacity: 1 } },
         "slide-up": { from: { transform: "translateY(16px)", opacity: 0 }, to: { transform: "none", opacity: 1 } },
+        "drop-in": { from: { transform: "translateY(-12px)", opacity: 0 }, to: { transform: "none", opacity: 1 } },
       },
       animation: {
         "fade-in": "fade-in 150ms ease-out",
         "slide-up": "slide-up 200ms ease-out",
+        "drop-in": "drop-in 180ms ease-out",
       },
     },
   },

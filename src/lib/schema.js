@@ -13,7 +13,8 @@ const itemTable = (name) => `
     remind_after INTEGER,
     reminder_flag BOOLEAN DEFAULT 0,
     category TEXT,
-    shopping_list INTEGER DEFAULT 0
+    shopping_list INTEGER DEFAULT 0,
+    upc TEXT
   )`;
 
 export const SCHEMA = [
@@ -42,6 +43,18 @@ export const SCHEMA = [
 
 export async function ensureSchema(client) {
   await client.batch(SCHEMA, "write");
+  // Columns added after the first release: add them to existing databases.
+  for (const table of ["groceries", "supplies"]) {
+    const cols = toObjects(await client.execute(`PRAGMA table_info(${table})`)).map((c) => c.name);
+    if (!cols.includes("upc")) await client.execute(`ALTER TABLE ${table} ADD COLUMN upc TEXT`);
+  }
+  await client.batch(
+    [
+      "CREATE INDEX IF NOT EXISTS groceries_upc ON groceries (upc)",
+      "CREATE INDEX IF NOT EXISTS supplies_upc ON supplies (upc)",
+    ],
+    "write"
+  );
 }
 
 // Turn a libSQL result into plain objects that serialize cleanly to JSON.

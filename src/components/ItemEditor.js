@@ -16,6 +16,7 @@ const EMPTY = {
   cost: "",
   date_purchased: "",
   remind_after: "",
+  upc: "",
   shopping_list: false,
 };
 
@@ -29,7 +30,7 @@ function toForm(item, defaults) {
   );
 }
 
-export default function ItemEditor({ open, onClose, type, item, categories = [], defaultCategory, onSaved, onDeleted }) {
+export default function ItemEditor({ open, onClose, type, item, categories = [], defaultCategory, prefill, onSaved, onDeleted }) {
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -40,11 +41,13 @@ export default function ItemEditor({ open, onClose, type, item, categories = [],
 
   useEffect(() => {
     if (open) {
-      setForm(toForm(item, defaultCategory ? { category: defaultCategory } : {}));
+      const defaults = { ...(defaultCategory ? { category: defaultCategory } : {}) };
+      for (const [k, v] of Object.entries(prefill || {})) if (v) defaults[k] = v;
+      setForm(toForm(item, defaults));
       setError("");
       setBusy(false);
     }
-  }, [open, item, defaultCategory]);
+  }, [open, item, defaultCategory, prefill]);
 
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -171,6 +174,11 @@ export default function ItemEditor({ open, onClose, type, item, categories = [],
                 <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-stone-400">days</span>
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="label" htmlFor="f-upc">Barcode <span className="font-normal text-stone-400">(optional)</span></label>
+            <input id="f-upc" className="input font-mono text-sm" inputMode="numeric" autoComplete="off" value={form.upc} onChange={set("upc")} placeholder="Scan or type the UPC" />
           </div>
 
           {isNew && (
