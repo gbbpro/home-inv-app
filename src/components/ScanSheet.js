@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCheck, FiEdit2, FiLink, FiLoader, FiPlus, FiSearch, FiShoppingCart } from "react-icons/fi";
+import { FiCamera, FiCheck, FiEdit2, FiLink, FiLoader, FiPlus, FiSearch, FiShoppingCart } from "react-icons/fi";
 import { LuScanBarcode } from "react-icons/lu";
 import Modal from "./Modal";
-import BarcodeScanner from "./BarcodeScanner";
+import BarcodeScanner, { decodePhoto } from "./BarcodeScanner";
 import { useToast } from "./Toast";
 import { api } from "@/lib/client";
 import { TYPES } from "@/lib/items";
@@ -44,6 +44,20 @@ export default function ScanSheet({ open, onClose, type, items = [], categories 
       setError(err.message);
       setPhase("scan");
     }
+  };
+
+  const fromPhoto = async (file) => {
+    if (!file) return;
+    setError("");
+    setPhase("looking");
+    try {
+      const code = await decodePhoto(file);
+      if (code) return lookUp(code);
+      setError("Couldn't find a barcode in that photo. Get closer, keep it flat and well lit, and try again.");
+    } catch {
+      setError("Couldn't read that photo. Try again.");
+    }
+    setPhase("scan");
   };
 
   const scanAgain = () => {
@@ -101,7 +115,22 @@ export default function ScanSheet({ open, onClose, type, items = [], categories 
       {phase === "scan" && (
         <div className="space-y-4">
           <BarcodeScanner onDetected={lookUp} />
-          <p className="text-center text-sm text-stone-500">Hold the barcode inside the box. It scans by itself.</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-stone-500">Hold the barcode inside the box. It scans by itself.</p>
+            <label className="btn-secondary shrink-0 cursor-pointer px-3 text-sm">
+              <FiCamera size={16} /> Photo
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(e) => {
+                  fromPhoto(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
           <form
             className="flex gap-2"
             onSubmit={(e) => {
@@ -113,7 +142,7 @@ export default function ScanSheet({ open, onClose, type, items = [], categories 
               className="input"
               inputMode="numeric"
               autoComplete="off"
-              placeholder="Or type the numbers under the barcode"
+              placeholder="Or type the barcode number"
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               aria-label="Barcode number"
