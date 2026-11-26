@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FiChevronRight, FiKey, FiLoader, FiLogOut, FiTrash2, FiUpload, FiUserPlus } from "react-icons/fi";
+import { FiChevronRight, FiKey, FiLoader, FiLogOut, FiMonitor, FiMoon, FiSun, FiTrash2, FiUpload, FiUserPlus } from "react-icons/fi";
 import Modal from "@/components/Modal";
 import { PageHeader } from "@/components/States";
 import { useConfirm } from "@/components/Confirm";
 import { useToast } from "@/components/Toast";
 import { api, useApi } from "@/lib/client";
 import { MIN_PASSWORD } from "@/lib/passwords";
+import { getTheme, setTheme } from "@/lib/theme";
 
 export default function Settings() {
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function Settings() {
       <PageHeader title="Settings" subtitle={me ? `Logged in as ${me.username}` : " "} />
 
       <div className="max-w-2xl space-y-6">
+        <Appearance />
         <ChangePassword />
 
         <section className="card overflow-hidden">
@@ -66,7 +68,7 @@ export default function Settings() {
               const isMe = me && u.user_id === me.user_id;
               return (
                 <li key={u.user_id} className="flex items-center gap-3 px-5 py-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold uppercase text-brand-700">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold uppercase text-brand-ink">
                     {u.username.slice(0, 1)}
                   </span>
                   <span className="min-w-0 flex-1 truncate font-medium text-stone-900">
@@ -106,6 +108,43 @@ export default function Settings() {
       <SetPassword user={resetting} onClose={() => setResetting(null)} />
       {confirmDialog}
     </>
+  );
+}
+
+const THEME_OPTIONS = [
+  { value: "system", label: "Automatic", icon: FiMonitor },
+  { value: "light", label: "Light", icon: FiSun },
+  { value: "dark", label: "Dark", icon: FiMoon },
+];
+
+function Appearance() {
+  const [theme, setChoice] = useState("system");
+  useEffect(() => setChoice(getTheme()), []);
+  const choose = (value) => {
+    setChoice(value);
+    setTheme(value);
+  };
+
+  return (
+    <section className="card p-5">
+      <h2 className="font-semibold text-stone-900">Appearance</h2>
+      <p className="text-sm text-stone-500">Automatic follows your phone or computer&apos;s light/dark setting.</p>
+      <div className="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1" role="radiogroup" aria-label="Appearance">
+        {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+          <button
+            key={value}
+            role="radio"
+            aria-checked={theme === value}
+            onClick={() => choose(value)}
+            className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+              theme === value ? "bg-surface text-stone-900 shadow-card" : "text-stone-500 hover:text-stone-800"
+            }`}
+          >
+            <Icon size={15} /> {label}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 

@@ -131,14 +131,14 @@ export default function InventoryPage({ type }) {
         </div>
         {categories.length > 1 && (
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0">
-            <button className={`chip ${!activeCategory ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"}`} onClick={() => setCategory("")}>
+            <button className={`chip ${!activeCategory ? "border-stone-900 bg-stone-900 text-stone-50" : "border-stone-200 bg-surface text-stone-600 hover:border-stone-300"}`} onClick={() => setCategory("")}>
               All
             </button>
             {categories.map(([c, count]) => {
               const key = c || "uncategorized";
               const on = activeCategory === key;
               return (
-                <button key={key} className={`chip ${on ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"}`} onClick={() => setCategory(on ? "" : key)}>
+                <button key={key} className={`chip ${on ? "border-stone-900 bg-stone-900 text-stone-50" : "border-stone-200 bg-surface text-stone-600 hover:border-stone-300"}`} onClick={() => setCategory(on ? "" : key)}>
                   {categoryLabel(c)}
                   <span className={on ? "text-stone-400" : "text-stone-400"}>{count}</span>
                 </button>
@@ -155,7 +155,7 @@ export default function InventoryPage({ type }) {
       ) : items.length === 0 ? (
         <EmptyState icon={FiPackage} title={`No ${meta.label.toLowerCase()} yet`}>
           Add your first item, scan a barcode, or{" "}
-          <Link className="font-medium text-brand-700 underline-offset-2 hover:underline" href={`/import?type=${type}`}>import a CSV</Link>.
+          <Link className="font-medium text-brand-ink underline-offset-2 hover:underline" href={`/import?type=${type}`}>import a CSV</Link>.
         </EmptyState>
       ) : visible.length === 0 ? (
         <EmptyState icon={FiSearch} title="Nothing matches">
@@ -229,7 +229,7 @@ function ItemRow({ item, onEdit, onToggle }) {
         aria-pressed={onList}
         aria-label={onList ? `Remove ${item.item} from shopping list` : `Add ${item.item} to shopping list`}
         className={`flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition ${
-          onList ? "bg-brand-600 text-white hover:bg-brand-700" : "border border-stone-200 bg-white text-stone-600 hover:border-brand-500 hover:text-brand-700"
+          onList ? "bg-brand-600 text-white hover:bg-brand-700" : "border border-stone-200 bg-surface text-stone-600 hover:border-brand-500 hover:text-brand-ink"
         }`}
       >
         {onList ? <FiCheck size={16} /> : <FiShoppingCart size={16} />}

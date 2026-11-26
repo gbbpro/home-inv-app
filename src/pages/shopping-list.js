@@ -122,8 +122,8 @@ export default function ShoppingList() {
       ) : total === 0 ? (
         <EmptyState icon={FiCheckSquare} title="Your list is empty">
           Tap <span className="font-medium text-stone-700">Add to list</span> on anything in{" "}
-          <Link href="/groceries" className="font-medium text-brand-700 hover:underline">Groceries</Link> or{" "}
-          <Link href="/supplies" className="font-medium text-brand-700 hover:underline">Supplies</Link>.
+          <Link href="/groceries" className="font-medium text-brand-ink hover:underline">Groceries</Link> or{" "}
+          <Link href="/supplies" className="font-medium text-brand-ink hover:underline">Supplies</Link>.
         </EmptyState>
       ) : (
         <div className="space-y-8">
@@ -145,7 +145,7 @@ export default function ShoppingList() {
 
       {checkedCount > 0 && (
         <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 px-4 md:bottom-6">
-          <div className="mx-auto flex max-w-md animate-slide-up items-center gap-3 rounded-2xl bg-stone-900 p-2 pl-4 text-white shadow-lg">
+          <div className="mx-auto flex max-w-md animate-slide-up items-center gap-3 rounded-2xl bg-stone-900 p-2 pl-4 text-stone-50 shadow-lg">
             <span className="text-sm">
               <span className="font-semibold">{checkedCount}</span> of {total} in the cart
             </span>
@@ -191,7 +191,7 @@ function Section({ title, icon: Icon, items, checkedIds, onCheck, onRemove }) {
                 >
                   <span
                     className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                      isChecked ? "border-brand-600 bg-brand-600 text-white" : "border-stone-300 bg-white"
+                      isChecked ? "border-brand-600 bg-brand-600 text-white" : "border-stone-300 bg-surface"
                     }`}
                   >
                     {isChecked && <FiCheck size={16} strokeWidth={3} />}

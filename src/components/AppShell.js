@@ -43,7 +43,7 @@ export default function AppShell({ children }) {
                 href={href}
                 aria-current={isActive(href) ? "page" : undefined}
                 className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${
-                  isActive(href) ? "bg-white text-brand-700 shadow-card" : "text-stone-600 hover:bg-white/70 hover:text-stone-900"
+                  isActive(href) ? "bg-surface text-brand-ink shadow-card" : "text-stone-600 hover:bg-surface/70 hover:text-stone-900"
                 }`}
               >
                 <Icon size={16} />
@@ -58,7 +58,7 @@ export default function AppShell({ children }) {
 
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
       >
         <div className="mx-auto grid max-w-md grid-cols-5">
           {NAV.map(({ href, label, icon: Icon }) => (
@@ -67,7 +67,7 @@ export default function AppShell({ children }) {
               href={href}
               aria-current={isActive(href) ? "page" : undefined}
               className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition ${
-                isActive(href) ? "text-brand-700" : "text-stone-500"
+                isActive(href) ? "text-brand-ink" : "text-stone-500"
               }`}
             >
               <span className={`flex h-7 w-12 items-center justify-center rounded-full ${isActive(href) ? "bg-brand-50" : ""}`}>

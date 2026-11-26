@@ -161,7 +161,7 @@ export default function BarcodeScanner({ onDetected }) {
   }, []);
 
   return (
-    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-stone-900">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black">
       <video ref={video} className="h-full w-full object-cover" playsInline muted autoPlay />
       {status === "scanning" && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

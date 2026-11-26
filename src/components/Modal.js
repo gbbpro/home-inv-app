@@ -24,10 +24,10 @@ export default function Modal({ open, onClose, title, children, footer, size = "
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-0 animate-fade-in bg-stone-900/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="absolute inset-0 animate-fade-in bg-black/40 backdrop-blur dark:bg-black/60-[2px]" onClick={onClose} />
       <div
         ref={panel}
-        className={`relative flex max-h-[92dvh] w-full animate-slide-up flex-col rounded-t-3xl bg-white shadow-sheet md:rounded-2xl ${width}`}
+        className={`relative flex max-h-[92dvh] w-full animate-slide-up flex-col rounded-t-3xl bg-surface shadow-sheet dark:border dark:border-stone-200 md:rounded-2xl ${width}`}
       >
         <div className="flex items-center justify-between gap-4 px-5 pb-2 pt-4 md:px-6 md:pt-5">
           <h2 className="text-lg font-semibold text-stone-900">{title}</h2>

@@ -24,10 +24,10 @@ export function ToastProvider({ children }) {
           <div
             key={toast.key}
             className={`pointer-events-auto flex max-w-sm animate-drop-in items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${
-              toast.error ? "bg-red-600 text-white" : "bg-stone-900 text-white"
+              toast.error ? "bg-red-600 text-white" : "bg-stone-900 text-stone-50"
             }`}
           >
-            {toast.error ? <FiAlertCircle className="shrink-0" /> : <FiCheckCircle className="shrink-0 text-brand-200" />}
+            {toast.error ? <FiAlertCircle className="shrink-0" /> : <FiCheckCircle className="shrink-0 text-brand-500" />}
             {toast.message}
           </div>
         )}

@@ -72,7 +72,7 @@ export default function Import() {
               <button
                 key={key}
                 onClick={() => setType(key)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${type === key ? "bg-white text-stone-900 shadow-card" : "text-stone-500 hover:text-stone-800"}`}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${type === key ? "bg-surface text-stone-900 shadow-card" : "text-stone-500 hover:text-stone-800"}`}
               >
                 {meta.label}
               </button>
